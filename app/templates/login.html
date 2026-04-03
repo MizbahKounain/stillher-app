@@ -130,16 +130,16 @@ function verifyOTP() {
     .then(res => res.json())
     .then(data => {
 
-        // ❌ If OTP is wrong → STOP here
+        
         if (data.error) {
             document.getElementById('verifyMsg').innerText = "Invalid OTP";
             return;
         }
 
-        // ✅ If OTP correct
+    
         document.getElementById('verifyMsg').innerText = "OTP verified";
 
-        // Call login API
+        
         fetch('/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
