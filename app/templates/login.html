@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - StillHer</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #ff7eb3, #6a11cb, #2575fc);
+            background-size: 300% 300%;
+            animation: gradientBG 10s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(15px);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            width: 350px;
+            animation: fadeIn 1s ease;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #333;
+        }
+
+        .btn-primary:hover {
+            background: black;
+            color: white;
+        }
+
+        .msg {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #fff;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+    <h2>StillHer Login</h2>
+
+    <input type="email" id="email" placeholder="Enter your email">
+
+    <button class="btn-primary" onclick="sendOTP()">Send OTP</button>
+    <p class="msg" id="otpMsg"></p>
+
+    <input type="text" id="otp" placeholder="Enter OTP">
+
+    <button class="btn-primary" onclick="verifyOTP()">Verify OTP</button>
+    <p class="msg" id="verifyMsg"></p>
+</div>
+
+<script>
+function sendOTP() {
+    fetch('/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: document.getElementById('email').value })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('otpMsg').innerText = "OTP sent successfully";
+    });
+}
+
+function verifyOTP() {
+    const email = document.getElementById('email').value;
+    const otp = document.getElementById('otp').value;
+
+    fetch('/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, otp: otp })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        // ❌ If OTP is wrong → STOP here
+        if (data.error) {
+            document.getElementById('verifyMsg').innerText = "Invalid OTP";
+            return;
+        }
+
+        // ✅ If OTP correct
+        document.getElementById('verifyMsg').innerText = "OTP verified";
+
+        // Call login API
+        fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        })
+        .then(res => res.json())
+        .then(loginData => {
+
+            if (loginData.message === "Login successful") {
+                if (loginData.role === "ADMIN") {
+                    window.location.href = "/admin-dashboard";
+                } else {
+                    window.location.href = "/user-dashboard?email=" + email;
+                }
+            } 
+            else if (loginData.message.includes("pending")) {
+                document.getElementById('verifyMsg').innerText = "Waiting for admin approval";
+            } 
+            else if (loginData.error) {
+                document.getElementById('verifyMsg').innerText = "Unfortunately, you are rejected";
+}
+
+        });
+
+    });
+}
+</script>
+
+</body>
+</html>

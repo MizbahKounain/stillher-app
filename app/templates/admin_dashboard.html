@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard - StillHer</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: white;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .box {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        li {
+            margin: 5px 0;
+        }
+
+        button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .approve {
+            background: green;
+            color: white;
+        }
+
+        .reject {
+            background: red;
+            color: white;
+        }
+
+        .chart-key {
+            text-align: center;
+            margin: 0 0 12px;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Admin Dashboard</h1>
+
+<div class="container">
+
+    <div class="box">
+        <h3>Approved Users</h3>
+        <ul id="approved"></ul>
+
+        <h3>Pending Users</h3>
+        <ul id="pending"></ul>
+
+        <h3>Rejected Users</h3>
+        <ul id="blocked"></ul>
+    </div>
+
+    <div class="box">
+        <p class="chart-key">
+        </p>
+        <canvas id="chart"></canvas>
+    </div>
+
+</div>
+
+<script>
+fetch('/dashboard', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: "mizbahkounain@gmail.com"})
+})
+.then(res => res.json())
+.then(data => {
+
+    function fillList(id, users, allowActions=false) {
+        let ul = document.getElementById(id);
+        ul.innerHTML = "";
+
+        if (users.length === 0) {
+            ul.innerHTML = "<li>None</li>";
+        } else {
+            users.forEach(u => {
+                let li = document.createElement("li");
+                li.innerText = u;
+
+                if (allowActions) {
+                    let approveBtn = document.createElement("button");
+                    approveBtn.innerText = "Approve";
+                    approveBtn.className = "approve";
+                    approveBtn.onclick = () => approve(u);
+
+                    let rejectBtn = document.createElement("button");
+                    rejectBtn.innerText = "Reject";
+                    rejectBtn.className = "reject";
+                    rejectBtn.onclick = () => reject(u);
+
+                    li.appendChild(approveBtn);
+                    li.appendChild(rejectBtn);
+                }
+
+                ul.appendChild(li);
+            });
+        }
+    }
+
+    fillList("approved", data.approved);
+    fillList("pending", data.pending, true);
+    fillList("blocked", data.blocked);
+
+    const statusColors = {
+        approved: '#22c55e',
+        pending: '#f59e0b',
+        rejected: '#ef4444'
+    };
+
+    new Chart(document.getElementById("chart"), {
+        type: 'pie',
+        data: {
+            labels: ['Approved', 'Pending', 'Rejected'],
+            datasets: [{
+                data: [
+                    data.counts.approved,
+                    data.counts.pending,
+                    data.counts.blocked
+                ],
+                backgroundColor: [
+                    statusColors.approved,
+                    statusColors.pending,
+                    statusColors.rejected
+                ],
+                borderColor: '#1e1b4b',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: { family: 'Poppins', size: 13 },
+                        padding: 14,
+                        color: (ctx) => {
+                            const legendColors = [
+                                statusColors.approved,
+                                statusColors.pending,
+                                statusColors.rejected
+                            ];
+                            return legendColors[ctx.index] ?? '#ffffff';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+
+function approve(email) {
+    fetch('/admin/approve', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email})
+    }).then(() => location.reload());
+}
+
+function reject(email) {
+    fetch('/admin/reject', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email})
+    }).then(() => location.reload());
+}
+</script>
+
+</body>
+</html>
